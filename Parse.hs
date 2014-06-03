@@ -45,12 +45,12 @@ parseCSV noHeader
          sep
          contents = map lineToSeq
                   . zip [1..]
+                  . map (Split.splitOn sep)
                   . filterShortLines
                   . body noHeader
                   $ contents
   where
     lineToSeq = convertToFastaSeq headerList
-              . splitLine
     convertToFastaSeq [-1] (x, xs) = FastaSequence { fastaInfo = show x
                                                    , fastaSeq  = xs !! mainSeq
                                                    , germline  = getGerm
@@ -73,9 +73,9 @@ parseCSV noHeader
                                                                  xs
                                                    }
     getHeader xs x      = xs !! x
-    splitLine (x, xs)   = (x, Split.splitOn sep xs)
     filterShortLines    = filter ( \x -> length (Split.splitOn sep x)
-                                      >= max (maximum headerList) mainSeq )
+                                      >= maxField )
+    maxField            = maximum (headerList ++ [mainSeq, mainGerm, mainClone])
     body True           = lines
     body False          = tail . lines
     header              = Split.splitOn sep . head . lines $ contents
@@ -99,4 +99,4 @@ parseCSV noHeader
 
 -- | Counts the number of times a substring appears in a string
 count :: (Eq a) => a -> [a] -> Int
-count x = foldr (\y acc -> if y == x then acc + 1 else acc) 0
+count x = foldl' (\acc y -> if y == x then acc + 1 else acc) 0
