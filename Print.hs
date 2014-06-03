@@ -41,7 +41,6 @@ printFasta = body
                                   , "\n"
                                   , intercalate "\n" . map seqToString $ xs
                                   ]
-
     cloneList = groupBy (\x y -> cloneID x == cloneID y)
               . sortBy (comparing cloneID)
     seqToString x = ">" ++ fastaInfo x ++ "\n" ++ fastaSeq x
