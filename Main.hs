@@ -1,5 +1,5 @@
 -- csv-to-fasta
--- By G.W. Schwartz
+-- By Gregory W. Schwartz
 
 -- Takes a csv file and return a fasta file where each sequence was from
 -- a column in the csv file
@@ -17,9 +17,15 @@ data Options = Options { inputHeaders    :: String
                        , inputHeaderCols :: String
                        , inputSeqs       :: String
                        , inputSeqsCol    :: Int
+                       , inputGerm       :: String
+                       , inputGermCol    :: Int
+                       , inputClone      :: String
+                       , inputCloneCol   :: Int
                        , inputLabel      :: String
                        , inputSep        :: String
                        , noHeader        :: Bool
+                       , includeGermline :: Bool
+                       , includeClone    :: Bool
                        , input           :: String
                        , output          :: String
                        }
@@ -29,7 +35,7 @@ options :: Parser Options
 options = Options
       <$> strOption
           ( long "headers"
-         <> short 'N'
+         <> short 'n'
          <> metavar "STRING"
          <> value ""
          <> help "The column names headers separated by a space.\
@@ -37,12 +43,12 @@ options = Options
                  \ over header-cols" )
       <*> strOption
           ( long "header-cols"
-         <> short 'n'
+         <> short 'N'
          <> metavar "INT"
          <> value "-1"
          <> help "The column numbers for the header separated by a space.\
                  \ Appears in the header in the order given" )
-      <*> option
+      <*> strOption
           ( long "seqs"
          <> short 's'
          <> metavar "STRING"
@@ -51,10 +57,37 @@ options = Options
                  \ seqs-col" )
       <*> option
           ( long "seqs-col"
-         <> short 's'
+         <> short 'S'
          <> metavar "INT"
          <> value 1
          <> help "The column number for the sequences" )
+      <*> strOption
+          ( long "germline"
+         <> short 'g'
+         <> metavar "STRING"
+         <> value ""
+         <> help "The column name for the germline sequences. \
+                 \ Has preference over germline-col" )
+      <*> option
+          ( long "germline-col"
+         <> short 'G'
+         <> metavar "INT"
+         <> value 1
+         <> help "The column number for the germline sequences" )
+      <*> strOption
+          ( long "clone"
+         <> short 'c'
+         <> metavar "STRING"
+         <> value ""
+         <> help "The column name for the clone ID. Requires germline column.\
+                 \ Has preference over clone-col" )
+      <*> option
+          ( long "clone-col"
+         <> short 'C'
+         <> metavar "INT"
+         <> value 1
+         <> help "The column number for the clone ID.\
+                 \ Requires germline column" )
       <*> strOption
           ( long "label"
          <> short 'l'
@@ -63,7 +96,7 @@ options = Options
          <> help "An optional label to be added at the end of the header" )
       <*> strOption
           ( long "sep"
-         <> short 'c'
+         <> short 'e'
          <> metavar "STRING"
          <> value ","
          <> help "The csv delimiter" )
@@ -71,6 +104,16 @@ options = Options
           ( long "no-header"
          <> short 'h'
          <> help "Whether the csv contains a header" )
+      <*> switch
+          ( long "include-germline"
+         <> short 'p'
+         <> help "Whether to include the germline in CLIP fasta style\
+                 \ formatting" )
+      <*> switch
+          ( long "include-clone"
+         <> short 'P'
+         <> help "Whether to include the clones in CLIP fasta style\
+                 \ formatting (needs include-germline)" )
       <*> strOption
           ( long "input"
          <> short 'i'
@@ -101,6 +144,10 @@ csvToFasta opts = do
                             $ opts
         seqs                = inputSeqs opts
         seqCol              = inputSeqsCol opts
+        germ                = inputGerm opts
+        germCol             = inputGermCol opts
+        clone               = inputClone opts
+        cloneCol            = inputCloneCol opts
         label               = inputLabel opts
         sep                 = if (inputSep opts == "\\t")
                                   then "\t"
@@ -110,10 +157,16 @@ csvToFasta opts = do
                             $ contentsCarriages
         unfilteredFastaList = parseCSV
                               (noHeader opts)
+                              (includeGermline opts)
+                              (includeClone opts)
                               headers
                               headerCols
                               seqs
                               seqCol
+                              germ
+                              germCol
+                              clone
+                              cloneCol
                               sep
                               contents
         unlabeledFastaList  = filter (\x -> fastaSeq x /= "")
@@ -129,7 +182,7 @@ csvToFasta opts = do
 
 
     -- Save results
-    writeFile (output opts) . printFasta $ fastaList
+    writeFile (output opts) . printFasta (includeClone opts) $ fastaList
 
 main :: IO ()
 main = execParser opts >>= csvToFasta
