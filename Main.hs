@@ -6,6 +6,8 @@
 
 -- Cabal
 import Options.Applicative
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.IO as TIO
 
 -- Local
 import Types
@@ -133,27 +135,31 @@ lineCompress []        = []
 lineCompress ('\n':xs) = '\n' : (lineCompress $ dropWhile (== '\n') xs)
 lineCompress (x:xs)    = x : (lineCompress xs)
 
+-- | Removes empty lines text version
+lineCompressText :: T.Text -> T.Text
+lineCompressText = T.unlines . filter (not . T.null) . T.lines
+
 csvToFasta :: Options -> IO ()
 csvToFasta opts = do
-    contentsCarriages <- readFile . input $ opts
+    contentsCarriages <- TIO.readFile . input $ opts
     -- Get rid of carriages
-    let headers             = words . inputHeaders $ opts
+    let headers             = T.words . T.pack . inputHeaders $ opts
         headerCols          = map (\x -> read x :: Int)
                             . words
                             . inputHeaderCols
                             $ opts
-        seqs                = inputSeqs opts
+        seqs                = T.pack . inputSeqs $ opts
         seqCol              = inputSeqsCol opts
-        germ                = inputGerm opts
+        germ                = T.pack . inputGerm $ opts
         germCol             = inputGermCol opts
-        clone               = inputClone opts
+        clone               = T.pack . inputClone $ opts
         cloneCol            = inputCloneCol opts
-        label               = inputLabel opts
+        label               = T.pack . inputLabel $ opts
         sep                 = if (inputSep opts == "\\t")
-                                  then "\t"
-                                  else inputSep opts
-        contents            = lineCompress
-                            . map (\x -> if (x == '\r') then '\n' else x)
+                                  then T.pack "\t"
+                                  else T.pack . inputSep $ opts
+        contents            = lineCompressText
+                            . T.map (\x -> if (x == '\r') then '\n' else x)
                             $ contentsCarriages
         unfilteredFastaList = parseCSV
                               (noHeader opts)
@@ -169,20 +175,20 @@ csvToFasta opts = do
                               cloneCol
                               sep
                               contents
-        unlabeledFastaList  = filter (\x -> fastaSeq x /= "")
+        unlabeledFastaList  = filter (not . T.null . fastaSeq)
                               unfilteredFastaList
-        fastaList           = if (null label)
+        fastaList           = if (T.null label)
                                   then unlabeledFastaList
                                   else map
                                        (\x
                                       -> x { fastaInfo = label
-                                                      ++ "|"
-                                                      ++ fastaInfo x } )
+                                              `T.append` (T.pack "|")
+                                              `T.append` fastaInfo x } )
                                          unlabeledFastaList
 
 
     -- Save results
-    writeFile (output opts) . printFasta (includeClone opts) $ fastaList
+    TIO.writeFile (output opts) . printFasta (includeClone opts) $ fastaList
 
 main :: IO ()
 main = execParser opts >>= csvToFasta

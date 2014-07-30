@@ -4,6 +4,8 @@
 -- Collects all functions pertaining to the parsing of strings to data
 -- structures
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module Parse where
 
 -- | Built-in
@@ -11,7 +13,7 @@ import Data.List
 import Data.Maybe
 
 -- | Cabal
-import qualified Data.List.Split as Split
+import qualified Data.Text.Lazy as T
 
 -- | Local
 import Types
@@ -20,16 +22,16 @@ import Types
 parseCSV :: Bool
          -> Bool
          -> Bool
-         -> [String]
+         -> [T.Text]
          -> [Int]
-         -> String
+         -> T.Text
          -> Int
-         -> String
+         -> T.Text
          -> Int
-         -> String
+         -> T.Text
          -> Int
-         -> String
-         -> String
+         -> T.Text
+         -> T.Text
          -> [FastaSequence]
 parseCSV noHeader
          includeGermline
@@ -44,14 +46,14 @@ parseCSV noHeader
          cloneCol
          sep
          contents = map lineToSeq
-                  . zip [1..]
-                  . map (Split.splitOn sep)
+                  . zip ([1..] :: [Int])
+                  . map (T.splitOn sep)
                   . filterShortLines
                   . body noHeader
                   $ contents
   where
     lineToSeq = convertToFastaSeq headerList
-    convertToFastaSeq [-1] (x, xs) = FastaSequence { fastaInfo = show x
+    convertToFastaSeq [-1] (x, xs) = FastaSequence { fastaInfo = showText x
                                                    , fastaSeq  = xs !! mainSeq
                                                    , germline  = getGerm
                                                                  includeGermline
@@ -60,7 +62,8 @@ parseCSV noHeader
                                                                  includeClone
                                                                  xs
                                                    }
-    convertToFastaSeq _ (_, xs)    = FastaSequence { fastaInfo = intercalate "|"
+    convertToFastaSeq _ (_, xs)    = FastaSequence { fastaInfo = T.intercalate
+                                                                 "|"
                                                                . map
                                                                  (getHeader xs)
                                                                $ headerList
@@ -73,12 +76,12 @@ parseCSV noHeader
                                                                  xs
                                                    }
     getHeader xs x      = xs !! x
-    filterShortLines    = filter ( \x -> length (Split.splitOn sep x)
+    filterShortLines    = filter ( \x -> length (T.splitOn sep x)
                                       >= maxField )
     maxField            = maximum (headerList ++ [mainSeq, mainGerm, mainClone])
-    body True           = lines
-    body False          = tail . lines
-    header              = Split.splitOn sep . head . lines $ contents
+    body True           = T.lines
+    body False          = tail . T.lines
+    header              = T.splitOn sep . head . T.lines $ contents
     getGerm True xs     = Just (xs !! mainGerm)
     getGerm False _     = Nothing
     getClone True xs    = Just (xs !! mainClone)
@@ -87,13 +90,13 @@ parseCSV noHeader
         | null headers  = map (flip (-) 1) headerCols
         | otherwise     = mapMaybe (`elemIndex` header) headers
     mainSeq
-        | null seqs     = seqCol - 1
+        | T.null seqs   = seqCol - 1
         | otherwise     = fromJust . elemIndex seqs $ header
     mainGerm
-        | null germ     = germCol - 1
+        | T.null germ   = germCol - 1
         | otherwise     = fromJust . elemIndex germ $ header
     mainClone
-        | null clone     = cloneCol - 1
+        | T.null clone  = cloneCol - 1
         | otherwise     = fromJust . elemIndex clone $ header
 
 
