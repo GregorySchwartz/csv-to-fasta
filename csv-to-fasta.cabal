@@ -47,11 +47,11 @@ cabal-version:       >=1.8
 
 executable csv-to-fasta
   -- .hs or .lhs file containing the Main module.
-  -- main-is:             
+  main-is: Main.hs
   
   -- Modules included in this executable, other than Main.
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6.*, split >=0.2.*, optparse-applicative >=0.9.*
+  build-depends:       base >=4.6, split >=0.2, optparse-applicative >=0.9, text-format >=0.3, text >=0.11
   
