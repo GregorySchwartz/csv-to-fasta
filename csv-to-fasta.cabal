@@ -55,3 +55,5 @@ executable csv-to-fasta
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.6, split >=0.2, optparse-applicative >=0.9, text-format >=0.3, text >=0.11
   
+  -- Directories containing source files.
+  hs-source-dirs:      src
