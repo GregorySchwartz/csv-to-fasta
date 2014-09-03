@@ -57,7 +57,7 @@ options = Options
          <> value ""
          <> help "The column name for the sequences. Has preference over\
                  \ seqs-col" )
-      <*> option
+      <*> option auto
           ( long "seqs-col"
          <> short 'S'
          <> metavar "INT"
@@ -70,7 +70,7 @@ options = Options
          <> value ""
          <> help "The column name for the germline sequences. \
                  \ Has preference over germline-col" )
-      <*> option
+      <*> option auto
           ( long "germline-col"
          <> short 'G'
          <> metavar "INT"
@@ -83,7 +83,7 @@ options = Options
          <> value ""
          <> help "The column name for the clone ID. Requires germline column.\
                  \ Has preference over clone-col" )
-      <*> option
+      <*> option auto
           ( long "clone-col"
          <> short 'C'
          <> metavar "INT"
