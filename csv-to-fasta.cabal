@@ -57,3 +57,5 @@ executable csv-to-fasta
   
   -- Directories containing source files.
   hs-source-dirs:      src
+
+  ghc-options: -O2
