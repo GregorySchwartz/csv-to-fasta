@@ -141,7 +141,9 @@ lineCompressText = T.unlines . filter (not . T.null) . T.lines
 
 csvToFasta :: Options -> IO ()
 csvToFasta opts = do
-    contentsCarriages <- TIO.readFile . input $ opts
+    contentsCarriages <- if null . input $ opts
+                            then TIO.getContents
+                            else TIO.readFile . input $ opts
     -- Get rid of carriages
     let headers             = T.words . T.pack . inputHeaders $ opts
         headerCols          = map (\x -> read x :: Int)
@@ -155,11 +157,11 @@ csvToFasta opts = do
         clone               = T.pack . inputClone $ opts
         cloneCol            = inputCloneCol opts
         label               = T.pack . inputLabel $ opts
-        sep                 = if (inputSep opts == "\\t")
+        sep                 = if inputSep opts == "\\t"
                                   then T.pack "\t"
                                   else T.pack . inputSep $ opts
         contents            = lineCompressText
-                            . T.map (\x -> if (x == '\r') then '\n' else x)
+                            . T.map (\x -> if x == '\r' then '\n' else x)
                             $ contentsCarriages
         unfilteredFastaList = parseCSV
                               (noHeader opts)
@@ -177,7 +179,7 @@ csvToFasta opts = do
                               contents
         unlabeledFastaList  = filter (not . T.null . fastaSeq)
                               unfilteredFastaList
-        fastaList           = if (T.null label)
+        fastaList           = if T.null label
                                   then unlabeledFastaList
                                   else map
                                        (\x
@@ -188,7 +190,11 @@ csvToFasta opts = do
 
 
     -- Save results
-    TIO.writeFile (output opts) . printFasta (includeClone opts) $ fastaList
+    if null . output $ opts
+        then TIO.putStrLn . printFasta (includeClone opts) $ fastaList
+        else TIO.writeFile (output opts)
+           . printFasta (includeClone opts)
+           $ fastaList
 
 main :: IO ()
 main = execParser opts >>= csvToFasta
