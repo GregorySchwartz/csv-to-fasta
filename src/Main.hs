@@ -126,7 +126,7 @@ options = Options
           ( long "output"
          <> short 'o'
          <> metavar "FILE"
-         <> value "output.fasta"
+         <> value ""
          <> help "The output fasta file" )
 
 -- | Removes empty lines
