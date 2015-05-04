@@ -91,14 +91,19 @@ parseCSV noHeader
         | otherwise     = mapMaybe (`elemIndex` header) headers
     mainSeq
         | T.null seqs   = seqCol - 1
-        | otherwise     = fromJust . elemIndex seqs $ header
+        | otherwise     = fromMaybe (error "Sequence column not found")
+                        . elemIndex seqs
+                        $ header
     mainGerm
         | T.null germ   = germCol - 1
-        | otherwise     = fromJust . elemIndex germ $ header
+        | otherwise     = fromMaybe (error "Germline column not found")
+                        . elemIndex germ
+                        $ header
     mainClone
         | T.null clone  = cloneCol - 1
-        | otherwise     = fromJust . elemIndex clone $ header
-
+        | otherwise     = fromMaybe (error "Clone column not found")
+                        . elemIndex clone
+                        $ header
 
 -- | Counts the number of times a substring appears in a string
 count :: (Eq a) => a -> [a] -> Int
