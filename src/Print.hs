@@ -21,31 +21,27 @@ import Types
 
 -- Return the results of the filtration in string form for saving
 -- to a file
-printFasta :: Bool -> [FastaSequence] -> T.Text
-printFasta = body
+printFasta :: Bool -> Bool -> [FastaSequence] -> T.Text
+printFasta cloneFlag noSortCloneFlag = body
   where
-    body False          = T.unlines
-                        . map clipVsFasta
-    body True           = T.unlines . map cloneToString . cloneList
+    body = if cloneFlag
+            then T.unlines . map cloneToString . cloneList
+            else T.unlines . map clipVsFasta
     clipVsFasta x
-        | isJust . germline $ x = T.concat [ ">>Germline|"
-                                           , fastaInfo x
-                                           , "\n"
-                                           , fromMaybe "" . germline $ x
-                                           , "\n>"
-                                           , fastaInfo x
-                                           , "\n"
-                                           , fastaSeq x ]
+        | isJust . germline $ x =
+            T.intercalate "\n" [ ">>Germline|" `T.append` fastaInfo x
+                               , fromMaybe "" . germline $ x
+                               , ">" `T.append` fastaInfo x
+                               , fastaSeq x ]
         | otherwise = seqToString x
-    cloneToString (x:xs) = T.concat [ ">>Germline|"
-                                    , fromMaybe "" . cloneID $ x
-                                    , "\n"
-                                    , fromMaybe "" . germline $ x
-                                    , "\n"
-                                    , seqToString x
-                                    , "\n"
-                                    , T.intercalate "\n" . map seqToString $ xs
-                                    ]
+    cloneToString (x:xs) =
+        T.intercalate "\n" [ ">>Germline|" `T.append` (fromMaybe "" (cloneID x))
+                           , fromMaybe "" . germline $ x
+                           , seqToString x
+                           , T.intercalate "\n" . map seqToString $ xs
+                           ]
     cloneList = groupBy (\x y -> cloneID x == cloneID y)
-              . sortBy (comparing cloneID)
+              . sortClones noSortCloneFlag
+    sortClones True  = id
+    sortClones False = sortBy (comparing cloneID)
     seqToString x = T.concat [">", fastaInfo x, "\n", fastaSeq x]

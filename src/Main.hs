@@ -28,6 +28,7 @@ data Options = Options { inputHeaders    :: String
                        , noHeader        :: Bool
                        , includeGermline :: Bool
                        , includeClone    :: Bool
+                       , sortCloneFlag   :: Bool
                        , input           :: String
                        , output          :: String
                        }
@@ -116,6 +117,13 @@ options = Options
          <> short 'P'
          <> help "Whether to include the clones in CLIP fasta style\
                  \ formatting (needs include-germline)" )
+      <*> switch
+          ( long "clone-no-sort"
+         <> short 'P'
+         <> help "Whether to bypass sorting fasta sequences by clone before\
+                 \categorizing clones for the CLIP fasta. If true, the\
+                 \ list will not be sorted and only sequential sequences in\
+                 \ the file will be checked and joined for the same clone" )
       <*> strOption
           ( long "input"
          <> short 'i'
@@ -191,9 +199,11 @@ csvToFasta opts = do
 
     -- Save results
     if null . output $ opts
-        then TIO.putStrLn . printFasta (includeClone opts) $ fastaList
+        then TIO.putStrLn
+           . printFasta (includeClone opts) (sortCloneFlag opts)
+           $ fastaList
         else TIO.writeFile (output opts)
-           . printFasta (includeClone opts)
+           . printFasta (includeClone opts) (sortCloneFlag opts)
            $ fastaList
 
 main :: IO ()
